@@ -1,49 +1,30 @@
-#########################
-# Makefile for qunix #
-#########################
+##################################################
+# Makefile
+##################################################
 
-# Entry point of qunix
-# It must have the same value with 'KernelEntryPointPhyAddr' in load.inc!
-ENTRYPOINT	= 0x30400
+BOOT:=boot.asm
+LDR:=loader.asm
+BOOT_BIN:=$(subst .asm,.bin,$(BOOT))
+LDR_BIN:=$(subst .asm,.bin,$(LDR))
 
-# Offset of entry point in kernel file
-# It depends on ENTRYPOINT
-ENTRYOFFSET	=   0x400
+IMG:=a.img
+FLOPPY:=/mnt/floppy/
 
-# Programs, flags, etc.
-ASM		= nasm
-DASM		= ndisasm
-CC		= gcc
-LD		= ld
-ASMBFLAGS	= -I boot/include/
-ASMKFLAGS	= -I include/ -f elf
-CFLAGS		= -I include/ -c -fno-builtin -fno-stack-protector -minline-all-stringops -m32
-LDFLAGS		= -s -Ttext $(ENTRYPOINT) -melf_i386
-DASMFLAGS	= -u -o $(ENTRYPOINT) -e $(ENTRYOFFSET)
+.PHONY : everything
 
-# This Program
-ORANGESBOOT	= boot/boot.bin
-
-# All Phony Targets
-.PHONY : everything final image clean realclean all buildimg
-
-# Default starting position
-everything : $(ORANGESBOOT)
-
-all : realclean everything
-
-final : all clean
-
-image : final buildimg
-
-realclean :
-	rm -f $(ORANGESBOOT)
-
-# We assume that "a.img" exists in current folder
+everything : $(BOOT_BIN) $(LDR_BIN)
 buildimg :
-	dd if=boot/boot.bin of=a.img bs=512 count=1 conv=notrunc
-	sudo mount -o loop a.img /mnt/floppy/
-	sudo umount /mnt/floppy
+	dd if=boot.bin of=a.img bs=512 count=1 conv=notrunc
+	mount -o loop a.img /mnt/floppy/
+	cp -fv loader.bin /mnt/floppy/
+	umount /mnt/floppy
 
-boot/boot.bin : boot/boot.asm
-	$(ASM) $(ASMBFLAGS) -o $@ $<
+clean :
+	rm -f $(BOOT_BIN) $(LDR_BIN)
+
+$(BOOT_BIN) : $(BOOT)
+	nasm $< -o $@
+
+$(LDR_BIN) : $(LDR)
+	nasm $< -o $@
+
