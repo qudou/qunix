@@ -1,0 +1,1 @@
+mount d C:\Users\Administrator\qunix\asm\env
